@@ -11,6 +11,7 @@
  * intentionally rebuilds the media controller.
  */
 import type {
+  ScrollScrubConnector,
   ScrollScrubScene,
   ScrollScrubTheme,
 } from "@/components/scroll-scrub/scroll-scrub";
@@ -23,6 +24,18 @@ export const scrollScrubTheme: ScrollScrubTheme = {
   ink: "#f5f6f7",
   muted: "#8d949c",
 };
+
+// Preserve the removed chapter's footage without restoring its text or nav item.
+export const scrollScrubConnectors: (ScrollScrubConnector | null)[] = [
+  {
+    clip: "/assets/world/scene-02.mp4",
+    mobileClip: "/assets/world/scene-02-mobile.mp4",
+    poster: "/assets/world/scene-02-poster.png",
+    mobilePoster: "/assets/world/scene-02-mobile-poster.png",
+    scroll: 1.4,
+  },
+  null,
+];
 
 export const scrollScrubScenes: ScrollScrubScene[] = [
   {

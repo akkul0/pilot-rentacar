@@ -11,7 +11,7 @@ import {
   Why,
 } from "@/components/pilot/pilot-sections";
 import { ScrollScrub } from "@/components/scroll-scrub/scroll-scrub";
-import { scrollScrubScenes, scrollScrubTheme } from "@/scroll-scrub-scenes";
+import { scrollScrubScenes, scrollScrubConnectors, scrollScrubTheme } from "@/scroll-scrub-scenes";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -27,6 +27,7 @@ export function Index() {
       <ScrollScrub
         className="pilot-journey"
         scenes={scrollScrubScenes}
+        connectors={scrollScrubConnectors}
         theme={scrollScrubTheme}
       />
       <BookingBar />

@@ -89,6 +89,7 @@ interface RuntimeSegment extends Segment {
 
 interface Controller {
   jumpToSection: (index: number) => void;
+  resume: () => void;
 }
 
 type ThemeStyle = CSSProperties & Record<`--ss-${string}`, string | number>;
@@ -177,6 +178,8 @@ export function ScrollScrub({
   const controllerRef = useRef<Controller | null>(null);
   const onActiveRef = useRef(onActiveSectionChange);
   const [activeSection, setActiveSection] = useState(0);
+  const [motionEnabled, setMotionEnabled] = useState(false);
+  const [needsStart, setNeedsStart] = useState(false);
   const segments = useMemo(
     () => buildSegments(scenes, connectors ?? []),
     [connectors, scenes]
@@ -210,7 +213,8 @@ export function ScrollScrub({
 
     const reduceMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)"
-    ).matches;
+    ).matches && !motionEnabled;
+    setNeedsStart(reduceMotion);
     const coarsePointer = window.matchMedia(
       "(hover: none) and (pointer: coarse)"
     ).matches;
@@ -240,11 +244,14 @@ export function ScrollScrub({
     let total = 1;
     let viewportHeight = window.innerHeight;
     let layoutWidth = window.innerWidth;
-    let userReady = false;
+    let userReady = motionEnabled;
+    const primed = new WeakSet<HTMLVideoElement>();
+    const priming = new WeakSet<HTMLVideoElement>();
 
     const unloadClip = (segment: RuntimeSegment) => {
       segment.abort?.abort();
       segment.video?.remove();
+      segment.video?.pause();
       if (segment.objectUrl) {
         URL.revokeObjectURL(segment.objectUrl);
       }
@@ -282,14 +289,22 @@ export function ScrollScrub({
     };
 
     const primeVideo = async (video?: HTMLVideoElement) => {
-      if (!video || !isMobile()) {
+      if (!video || !isMobile() || primed.has(video) || priming.has(video)) {
         return;
       }
+      priming.add(video);
       try {
         await video.play();
         video.pause();
+        if (!destroyed && video.isConnected) {
+          primed.add(video);
+          setNeedsStart(false);
+          dirty = true;
+        }
       } catch {
-        // Keep the poster; a later user gesture/seek can retry naturally.
+        if (!destroyed) setNeedsStart(true);
+      } finally {
+        priming.delete(video);
       }
     };
 
@@ -312,22 +327,24 @@ export function ScrollScrub({
       const request = segment.abort;
 
       try {
-        const response = await fetch(source, {
-          signal: request.signal,
-        });
-        if (!response.ok) {
-          throw new Error(`Clip failed: ${response.status}`);
+        // Mobile Safari can decode/seek the original MP4 using byte ranges.
+        // Create its media element synchronously, before the first touch ends.
+        let objectUrl: string | undefined;
+        if (!isMobile()) {
+          const response = await fetch(source, { signal: request.signal });
+          if (!response.ok) throw new Error(`Clip failed: ${response.status}`);
+          const blob = await response.blob();
+          if (!destroyed && !request.signal.aborted) objectUrl = URL.createObjectURL(blob);
         }
-        const blob = await response.blob();
         if (
           destroyed ||
           request.signal.aborted ||
           segment.loadedSource !== source
         ) {
+          if (objectUrl) URL.revokeObjectURL(objectUrl);
           return;
         }
 
-        const objectUrl = URL.createObjectURL(blob);
         const video = document.createElement("video");
         video.className = "scroll-scrub__video";
         video.muted = true;
@@ -335,7 +352,7 @@ export function ScrollScrub({
         video.preload = "auto";
         video.setAttribute("muted", "");
         video.setAttribute("playsinline", "");
-        video.src = objectUrl;
+        video.setAttribute("webkit-playsinline", "");
 
         video.addEventListener(
           "loadedmetadata",
@@ -369,7 +386,7 @@ export function ScrollScrub({
               return;
             }
             video.remove();
-            URL.revokeObjectURL(objectUrl);
+            if (objectUrl) URL.revokeObjectURL(objectUrl);
             delete segment.video;
             delete segment.objectUrl;
             segment.failed = true;
@@ -377,6 +394,7 @@ export function ScrollScrub({
             segment.ready = false;
             delete segment.layer.dataset.videoPainted;
             segment.layer.dataset.videoFailed = "true";
+            setNeedsStart(true);
           },
           { once: true }
         );
@@ -393,6 +411,9 @@ export function ScrollScrub({
         segment.layer.append(video);
         segment.objectUrl = objectUrl;
         segment.video = video;
+        video.src = objectUrl ?? source;
+        video.load();
+        if (userReady) void primeVideo(video);
       } catch (error) {
         if (
           request.signal.aborted ||
@@ -404,6 +425,7 @@ export function ScrollScrub({
         segment.layer.dataset.videoFailed = "true";
         segment.failed = true;
         segment.loading = false;
+        if (!destroyed) setNeedsStart(true);
       }
     };
 
@@ -469,7 +491,7 @@ export function ScrollScrub({
     const updateVideos = () => {
       for (const segment of runtime) {
         const { video } = segment;
-        if (!video || !segment.ready || video.seeking) {
+        if (!video || !segment.ready || video.seeking || priming.has(video)) {
           continue;
         }
         if (
@@ -515,16 +537,16 @@ export function ScrollScrub({
       layout();
     };
     const onFirstGesture = () => {
-      if (userReady) {
-        return;
-      }
       userReady = true;
       for (const segment of runtime) {
+        if (segment.failed) unloadClip(segment);
         void primeVideo(segment.video);
       }
+      dirty = true;
     };
 
     controllerRef.current = {
+      resume: onFirstGesture,
       jumpToSection(index) {
         const segment = runtime.find(
           (candidate) =>
@@ -546,11 +568,9 @@ export function ScrollScrub({
     window.addEventListener("resize", onResize);
     window.addEventListener("orientationchange", layout);
     window.addEventListener("pointerdown", onFirstGesture, {
-      once: true,
       passive: true,
     });
     window.addEventListener("touchstart", onFirstGesture, {
-      once: true,
       passive: true,
     });
 
@@ -575,7 +595,7 @@ export function ScrollScrub({
         segment.layer.style.removeProperty("z-index");
       }
     };
-  }, [segments]);
+  }, [segments, motionEnabled]);
 
   if (scenes.length === 0) {
     return null;
@@ -591,6 +611,7 @@ export function ScrollScrub({
   return (
     <section
       className={["scroll-scrub", className].filter(Boolean).join(" ")}
+      data-motion-enabled={motionEnabled || undefined}
       ref={rootRef}
       style={themeStyle}
     >
@@ -634,6 +655,16 @@ export function ScrollScrub({
         </div>
 
         <nav aria-label="Scroll chapters" className="scroll-scrub__route">
+          {needsStart && (
+            <button className="scroll-scrub__route-button" type="button" onClick={() => {
+              controllerRef.current?.resume();
+              if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+                setMotionEnabled(true);
+              }
+            }}>
+              Animasyonu başlat
+            </button>
+          )}
           {scenes.map((scene, index) => (
             <button
               aria-current={activeSection === index ? "step" : undefined}

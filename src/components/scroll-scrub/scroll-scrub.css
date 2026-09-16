@@ -84,7 +84,7 @@
 .scroll-scrub__route {
   position: absolute;
   z-index: 6;
-  top: clamp(1rem, 3vw, 2rem);
+  top: clamp(5rem, 7vw, 6rem);
   right: clamp(1rem, 4vw, 4rem);
   left: clamp(1rem, 4vw, 4rem);
   display: flex;
@@ -268,11 +268,11 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .scroll-scrub__chapter {
+  .scroll-scrub:not([data-motion-enabled]) .scroll-scrub__chapter {
     min-height: 100dvh !important;
   }
 
-  .scroll-scrub__connector-band {
+  .scroll-scrub:not([data-motion-enabled]) .scroll-scrub__connector-band {
     display: none;
   }
 
