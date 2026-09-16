@@ -1,0 +1,981 @@
+/* Pilot Rent a Car — the site's own brand layer.
+ * Lives outside src/routes and src/components/custom-ui on purpose: this is
+ * where the raw palette is allowed to live (see app/AGENTS.md). */
+
+:root {
+  --pilot-abyss: #06080a;
+  --pilot-night: #0b0d10;
+  --pilot-slate: #16191e;
+  --pilot-rule: #23282f;
+  --pilot-sky: #e5302b;
+  --pilot-deep: #b7211d;
+  --pilot-travertine: #e8dcc8;
+  --pilot-ink: #f4f7fa;
+  --pilot-muted: #90a4b6;
+
+  --pilot-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --pilot-body: "Inter", "Helvetica Neue", Arial, sans-serif;
+
+  --pilot-gutter: clamp(1.25rem, 5vw, 5rem);
+  --pilot-measure: 78rem;
+}
+
+.pilot {
+  background: var(--pilot-night);
+  color: var(--pilot-ink);
+  font-family: var(--pilot-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+.pilot ::selection {
+  background: var(--pilot-sky);
+  color: var(--pilot-abyss);
+}
+
+.pilot-shell {
+  margin-inline: auto;
+  max-width: var(--pilot-measure);
+  padding-inline: var(--pilot-gutter);
+  width: 100%;
+}
+
+.pilot-eyebrow {
+  color: var(--pilot-sky);
+  font-family: var(--pilot-display);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.pilot-h2 {
+  font-family: var(--pilot-display);
+  font-size: clamp(2rem, 5.2vw, 3.75rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.02;
+  text-wrap: balance;
+}
+
+.pilot-lede {
+  color: var(--pilot-muted);
+  font-size: clamp(1rem, 1.4vw, 1.125rem);
+  line-height: 1.6;
+  max-width: 42ch;
+}
+
+.pilot-spec {
+  font-family: var(--pilot-display);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* ── Nav ─────────────────────────────────────────────────────────── */
+
+.pilot-nav {
+  align-items: center;
+  background: color-mix(in srgb, var(--pilot-abyss) 82%, transparent);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--pilot-rule);
+  display: flex;
+  gap: 1.5rem;
+  inset-block-start: 0;
+  padding: 0.875rem var(--pilot-gutter);
+  position: sticky;
+  z-index: 60;
+}
+
+.pilot-nav__mark {
+  display: block;
+  height: 26px;
+  width: auto;
+}
+
+.pilot-nav__links {
+  display: none;
+  gap: 1.75rem;
+  margin-inline-start: auto;
+}
+
+@media (min-width: 60rem) {
+  .pilot-nav__links {
+    display: flex;
+  }
+}
+
+.pilot-nav__link {
+  color: var(--pilot-muted);
+  font-size: 0.875rem;
+  position: relative;
+  text-decoration: none;
+  transition: color 180ms ease;
+}
+
+.pilot-nav__link::after {
+  background: var(--pilot-sky);
+  block-size: 1px;
+  content: "";
+  inset-block-end: -6px;
+  inset-inline-start: 0;
+  position: absolute;
+  inline-size: 100%;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 220ms ease;
+}
+
+.pilot-nav__link:hover {
+  color: var(--pilot-ink);
+}
+
+.pilot-nav__link:hover::after {
+  transform: scaleX(1);
+}
+
+.pilot-nav__tail {
+  margin-inline-start: auto;
+}
+
+@media (min-width: 60rem) {
+  .pilot-nav__tail {
+    margin-inline-start: 0;
+  }
+}
+
+/* ── CTA garments — each with its own interaction identity ────────── */
+
+.pilot-cta-whatsapp {
+  align-items: center;
+  background: var(--pilot-sky);
+  border: none;
+  border-radius: 999px;
+  color: var(--pilot-abyss);
+  cursor: pointer;
+  display: inline-flex;
+  font-family: var(--pilot-display);
+  font-size: 0.875rem;
+  font-weight: 600;
+  gap: 0.5rem;
+  overflow: hidden;
+  padding: 0.75rem 1.375rem;
+  position: relative;
+  text-decoration: none;
+}
+
+.pilot-cta-whatsapp::before {
+  background: linear-gradient(
+    100deg,
+    transparent 20%,
+    rgb(255 255 255 / 0.55) 50%,
+    transparent 80%
+  );
+  content: "";
+  inset: 0;
+  position: absolute;
+  transform: translateX(-120%);
+  transition: transform 620ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.pilot-cta-whatsapp:hover::before {
+  transform: translateX(120%);
+}
+
+.pilot-cta-whatsapp > * {
+  position: relative;
+}
+
+.pilot-cta-quote {
+  background: var(--pilot-abyss);
+  border: 1px solid var(--pilot-travertine);
+  border-radius: 4px;
+  color: var(--pilot-travertine);
+  cursor: pointer;
+  font-family: var(--pilot-display);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  padding: 0.9375rem 1.75rem;
+  text-transform: uppercase;
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.pilot-cta-quote:hover {
+  box-shadow: inset 0 0 0 1px var(--pilot-travertine);
+}
+
+.pilot-cta-quote:active {
+  transform: translateY(1px);
+}
+
+.pilot-cta-rent {
+  align-items: center;
+  background: transparent;
+  border: 1px solid var(--pilot-rule);
+  border-radius: 3px;
+  color: var(--pilot-ink);
+  cursor: pointer;
+  display: inline-flex;
+  font-family: var(--pilot-display);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  gap: 0.5rem;
+  isolation: isolate;
+  overflow: hidden;
+  padding: 0.625rem 1.125rem;
+  position: relative;
+  text-decoration: none;
+}
+
+.pilot-cta-rent::before {
+  background: var(--pilot-sky);
+  content: "";
+  inset: 0;
+  position: absolute;
+  transform: translateY(100%);
+  transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+  z-index: -1;
+}
+
+.pilot-cta-rent:hover {
+  border-color: var(--pilot-sky);
+  color: var(--pilot-abyss);
+}
+
+.pilot-cta-rent:hover::before {
+  transform: translateY(0);
+}
+
+.pilot-cta-rent__arrow {
+  transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.pilot-cta-rent:hover .pilot-cta-rent__arrow {
+  transform: translateX(3px);
+}
+
+.pilot-cta-call {
+  color: var(--pilot-ink);
+  font-family: var(--pilot-display);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  padding-block: 0.25rem;
+  position: relative;
+  text-decoration: none;
+}
+
+.pilot-cta-call::after {
+  background: var(--pilot-travertine);
+  block-size: 1px;
+  content: "";
+  inset-block-end: 0;
+  inset-inline-start: 0;
+  position: absolute;
+  inline-size: 100%;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.pilot-cta-call:hover::after {
+  transform: scaleX(1);
+}
+
+.pilot-cta-pill {
+  align-items: center;
+  border: 1px solid var(--pilot-rule);
+  border-radius: 999px;
+  color: var(--pilot-ink);
+  display: inline-flex;
+  font-family: var(--pilot-display);
+  font-size: 0.75rem;
+  font-weight: 600;
+  gap: 0.4375rem;
+  letter-spacing: 0.06em;
+  padding: 0.4375rem 0.875rem;
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: border-color 200ms ease;
+}
+
+.pilot-cta-pill:hover {
+  border-color: var(--pilot-sky);
+}
+
+.pilot-cta-pill__dot {
+  background: var(--pilot-sky);
+  block-size: 6px;
+  border-radius: 50%;
+  inline-size: 6px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pilot-cta-pill__dot {
+    animation: pilot-pulse 2.4s ease-in-out infinite;
+  }
+}
+
+@keyframes pilot-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* ── Booking bar — the instrument panel ──────────────────────────── */
+
+.pilot-booking {
+  background: var(--pilot-abyss);
+  border-block: 1px solid var(--pilot-rule);
+  padding-block: clamp(2rem, 5vw, 3.5rem);
+  position: relative;
+  z-index: 20;
+}
+
+.pilot-booking__grid {
+  display: grid;
+  gap: 1px;
+  background: var(--pilot-rule);
+  border: 1px solid var(--pilot-rule);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+@media (min-width: 56rem) {
+  .pilot-booking__grid {
+    grid-template-columns: repeat(4, 1fr) auto;
+  }
+}
+
+.pilot-field {
+  background: var(--pilot-night);
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  padding: 0.9375rem 1.125rem;
+}
+
+.pilot-field__label {
+  color: var(--pilot-muted);
+  font-family: var(--pilot-display);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.pilot-field__control {
+  background: transparent;
+  border: none;
+  color: var(--pilot-ink);
+  font-family: var(--pilot-body);
+  font-size: 0.9375rem;
+  outline: none;
+  padding: 0;
+  width: 100%;
+}
+
+.pilot-field__control::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  opacity: 0.5;
+}
+
+.pilot-field:focus-within {
+  background: var(--pilot-slate);
+}
+
+.pilot-booking__submit {
+  align-items: center;
+  background: var(--pilot-night);
+  display: flex;
+  justify-content: center;
+  padding: 0.75rem 1rem;
+}
+
+.pilot-booking__note {
+  color: var(--pilot-muted);
+  font-size: 0.8125rem;
+  margin-block-start: 0.875rem;
+}
+
+.pilot-booking__out {
+  border: 1px solid var(--pilot-rule);
+  border-radius: 6px;
+  margin-block-start: 1.25rem;
+  padding: 1.125rem 1.25rem;
+}
+
+.pilot-booking__out p {
+  color: var(--pilot-muted);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+.pilot-booking__out strong {
+  color: var(--pilot-travertine);
+  font-family: var(--pilot-display);
+  font-weight: 600;
+}
+
+/* ── Section frame ───────────────────────────────────────────────── */
+
+.pilot-section {
+  padding-block: clamp(4rem, 10vw, 8rem);
+  position: relative;
+}
+
+.pilot-section--well {
+  background: var(--pilot-abyss);
+}
+
+.pilot-section__head {
+  display: grid;
+  gap: 1.25rem;
+  margin-block-end: clamp(2.5rem, 5vw, 4rem);
+}
+
+@media (min-width: 56rem) {
+  .pilot-section__head--split {
+    align-items: end;
+    grid-template-columns: 1.2fr 1fr;
+  }
+}
+
+/* ── Fleet ───────────────────────────────────────────────────────── */
+
+.pilot-classes {
+  display: grid;
+  gap: 1.25rem;
+}
+
+@media (min-width: 44rem) {
+  .pilot-classes {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 72rem) {
+  .pilot-classes {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.pilot-class {
+  background: var(--pilot-night);
+  border: 1px solid var(--pilot-rule);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: border-color 260ms ease;
+}
+
+.pilot-class:hover {
+  border-color: var(--pilot-deep);
+}
+
+.pilot-class__figure {
+  aspect-ratio: 3 / 2;
+  overflow: hidden;
+  position: relative;
+}
+
+.pilot-class__img {
+  block-size: 100%;
+  inline-size: 100%;
+  object-fit: cover;
+  transition: transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.pilot-class:hover .pilot-class__img {
+  transform: scale(1.045);
+}
+
+.pilot-class__price {
+  background: color-mix(in srgb, var(--pilot-abyss) 88%, transparent);
+  backdrop-filter: blur(6px);
+  border: 1px solid var(--pilot-rule);
+  border-radius: 4px;
+  color: var(--pilot-travertine);
+  font-family: var(--pilot-display);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  inset-block-end: 0.75rem;
+  inset-inline-start: 0.75rem;
+  padding: 0.3125rem 0.625rem;
+  position: absolute;
+}
+
+.pilot-class__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.125rem 1.25rem 1.375rem;
+}
+
+.pilot-class__name {
+  font-family: var(--pilot-display);
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.pilot-class__cars {
+  border-block-start: 1px solid var(--pilot-rule);
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  padding-block-start: 0.75rem;
+}
+
+.pilot-class__car {
+  align-items: baseline;
+  color: var(--pilot-muted);
+  display: flex;
+  font-size: 0.8125rem;
+  gap: 0.5rem;
+  justify-content: space-between;
+}
+
+.pilot-class__car span:last-child {
+  color: var(--pilot-rule);
+  flex-shrink: 0;
+  font-family: var(--pilot-display);
+  font-size: 0.625rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.pilot-class__foot {
+  margin-block-start: auto;
+  padding-block-start: 1rem;
+}
+
+/* ── Why — asymmetric split ──────────────────────────────────────── */
+
+.pilot-why {
+  display: grid;
+  gap: clamp(2rem, 5vw, 4rem);
+}
+
+@media (min-width: 62rem) {
+  .pilot-why {
+    align-items: center;
+    grid-template-columns: 0.9fr 1.1fr;
+  }
+}
+
+.pilot-why__figure {
+  border: 1px solid var(--pilot-rule);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.pilot-why__figure img {
+  display: block;
+  inline-size: 100%;
+}
+
+.pilot-claims {
+  display: flex;
+  flex-direction: column;
+}
+
+.pilot-claim {
+  border-block-start: 1px solid var(--pilot-rule);
+  display: grid;
+  gap: 0.5rem 1.25rem;
+  padding-block: 1.5rem;
+}
+
+@media (min-width: 40rem) {
+  .pilot-claim {
+    grid-template-columns: auto 1fr;
+  }
+}
+
+.pilot-claim:last-child {
+  border-block-end: 1px solid var(--pilot-rule);
+}
+
+.pilot-claim__icon {
+  color: var(--pilot-sky);
+}
+
+.pilot-claim__title {
+  font-family: var(--pilot-display);
+  font-size: 1.0625rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin-block-end: 0.3125rem;
+}
+
+.pilot-claim__body {
+  color: var(--pilot-muted);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+/* ── Places — offset editorial grid ──────────────────────────────── */
+
+.pilot-places {
+  display: grid;
+  gap: 1.25rem;
+}
+
+@media (min-width: 58rem) {
+  .pilot-places {
+    grid-template-columns: 1.35fr 1fr;
+  }
+}
+
+.pilot-places__plate {
+  border: 1px solid var(--pilot-rule);
+  border-radius: 8px;
+  min-block-size: 22rem;
+  overflow: hidden;
+  position: relative;
+}
+
+.pilot-places__plate img {
+  block-size: 100%;
+  inline-size: 100%;
+  object-fit: cover;
+}
+
+.pilot-places__caption {
+  background: linear-gradient(to top, var(--pilot-abyss), transparent);
+  inset-block-end: 0;
+  inset-inline: 0;
+  padding: 2.5rem 1.5rem 1.375rem;
+  position: absolute;
+}
+
+.pilot-routes {
+  display: flex;
+  flex-direction: column;
+}
+
+.pilot-route {
+  align-items: baseline;
+  border-block-start: 1px solid var(--pilot-rule);
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  padding-block: 1.0625rem;
+}
+
+.pilot-route:last-child {
+  border-block-end: 1px solid var(--pilot-rule);
+}
+
+.pilot-route__name {
+  font-family: var(--pilot-display);
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.pilot-route__note {
+  color: var(--pilot-muted);
+  font-size: 0.8125rem;
+  margin-block-start: 0.1875rem;
+}
+
+.pilot-route__time {
+  color: var(--pilot-travertine);
+  flex-shrink: 0;
+  font-family: var(--pilot-display);
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+/* ── Steps — numbered timeline ───────────────────────────────────── */
+
+.pilot-steps {
+  display: grid;
+  gap: 1.5rem;
+}
+
+@media (min-width: 54rem) {
+  .pilot-steps {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.pilot-step {
+  border-block-start: 2px solid var(--pilot-sky);
+  padding-block-start: 1.25rem;
+}
+
+.pilot-step__no {
+  color: var(--pilot-sky);
+  font-family: var(--pilot-display);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+}
+
+.pilot-step__title {
+  font-family: var(--pilot-display);
+  font-size: 1.375rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-block: 0.625rem 0.5rem;
+}
+
+.pilot-step__body {
+  color: var(--pilot-muted);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+.pilot-steps__figure {
+  border: 1px solid var(--pilot-rule);
+  border-radius: 8px;
+  margin-block-start: clamp(2rem, 4vw, 3rem);
+  overflow: hidden;
+}
+
+.pilot-steps__figure img {
+  display: block;
+  inline-size: 100%;
+}
+
+/* ── FAQ ─────────────────────────────────────────────────────────── */
+
+.pilot-faq {
+  display: flex;
+  flex-direction: column;
+}
+
+.pilot-faq__item {
+  border-block-start: 1px solid var(--pilot-rule);
+}
+
+.pilot-faq__item:last-child {
+  border-block-end: 1px solid var(--pilot-rule);
+}
+
+.pilot-faq__q {
+  align-items: center;
+  background: none;
+  border: none;
+  color: var(--pilot-ink);
+  cursor: pointer;
+  display: flex;
+  font-family: var(--pilot-display);
+  font-size: clamp(1rem, 2vw, 1.1875rem);
+  font-weight: 600;
+  gap: 1.5rem;
+  justify-content: space-between;
+  letter-spacing: -0.01em;
+  padding-block: 1.375rem;
+  text-align: start;
+  width: 100%;
+}
+
+.pilot-faq__sign {
+  color: var(--pilot-sky);
+  flex-shrink: 0;
+  transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.pilot-faq__q[aria-expanded="true"] .pilot-faq__sign {
+  transform: rotate(45deg);
+}
+
+.pilot-faq__a {
+  color: var(--pilot-muted);
+  font-size: 0.9375rem;
+  line-height: 1.7;
+  max-width: 62ch;
+  padding-block-end: 1.5rem;
+}
+
+/* ── Closing plate + footer ──────────────────────────────────────── */
+
+.pilot-close {
+  overflow: hidden;
+  position: relative;
+}
+
+.pilot-close__bg {
+  block-size: 100%;
+  filter: saturate(0.85);
+  inline-size: 100%;
+  inset: 0;
+  object-fit: cover;
+  position: absolute;
+}
+
+.pilot-close__veil {
+  background: linear-gradient(
+    to right,
+    var(--pilot-abyss) 8%,
+    color-mix(in srgb, var(--pilot-abyss) 55%, transparent) 62%,
+    transparent
+  );
+  inset: 0;
+  position: absolute;
+}
+
+.pilot-close__inner {
+  padding-block: clamp(5rem, 12vw, 9rem);
+  position: relative;
+}
+
+.pilot-close__card {
+  max-width: 34rem;
+}
+
+.pilot-close__actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  margin-block-start: 2rem;
+}
+
+.pilot-footer {
+  background: var(--pilot-abyss);
+  border-block-start: 1px solid var(--pilot-rule);
+  padding-block: 3rem 2rem;
+}
+
+.pilot-footer__grid {
+  display: grid;
+  gap: 2.5rem;
+}
+
+@media (min-width: 54rem) {
+  .pilot-footer__grid {
+    grid-template-columns: 1.4fr 1fr 1fr;
+  }
+}
+
+.pilot-footer__title {
+  color: var(--pilot-muted);
+  font-family: var(--pilot-display);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  margin-block-end: 1rem;
+  text-transform: uppercase;
+}
+
+.pilot-footer__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.pilot-footer__list a,
+.pilot-footer__list span {
+  color: var(--pilot-ink);
+  font-size: 0.9375rem;
+  text-decoration: none;
+  transition: color 180ms ease;
+}
+
+.pilot-footer__list a:hover {
+  color: var(--pilot-sky);
+}
+
+.pilot-footer__legal {
+  border-block-start: 1px solid var(--pilot-rule);
+  color: var(--pilot-muted);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 0.8125rem;
+  gap: 0.75rem 1.5rem;
+  justify-content: space-between;
+  margin-block-start: 2.5rem;
+  padding-block-start: 1.5rem;
+}
+
+/* ── Entrance motion — transform only, fired on mount ─────────────── */
+
+.pilot-rise {
+  transform: translate3d(0, 18px, 0);
+  transition:
+    transform 760ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 760ms ease;
+  will-change: transform;
+}
+
+.pilot-rise[data-shown="true"] {
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pilot-rise {
+    transform: none;
+    transition: none;
+  }
+
+  .pilot-class__img,
+  .pilot-cta-rent::before,
+  .pilot-cta-whatsapp::before {
+    transition: none;
+  }
+}
+
+/* ── Journey layer overrides ─────────────────────────────────────── */
+
+.pilot-journey .scroll-scrub__title {
+  font-family: var(--pilot-display);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+}
+
+.pilot-journey .scroll-scrub__kicker {
+  font-family: var(--pilot-display);
+  letter-spacing: 0.16em;
+}
+
+.pilot-journey .scroll-scrub__body {
+  font-family: var(--pilot-body);
+}
+
+/* ── The mark ────────────────────────────────────────────────────── */
+
+.pilot-mark {
+  color: var(--pilot-sky);
+  display: block;
+  height: auto;
+}
+
+.pilot-footer .pilot-mark,
+.pilot-nav .pilot-mark {
+  width: auto;
+}
+
+/* Individual vehicle catalogue */
+.pilot { overflow-x: clip; }
+.pilot-fleet { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.pilot-vehicle { min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 1.5rem; padding: clamp(1.25rem, 3vw, 2rem); background: var(--pilot-night); border: 1px solid var(--pilot-rule); border-radius: 8px; }
+.pilot-vehicle__heading { display: grid; gap: .6rem; }
+.pilot-vehicle__year { color: var(--pilot-muted); font-size: .8125rem; font-variant-numeric: tabular-nums; }
+.pilot-vehicle__fuel { color: var(--pilot-muted); font-size: .875rem; }
+.pilot-vehicle__price { margin-top: auto; font-family: var(--pilot-display); font-size: clamp(1.5rem, 3vw, 2rem); font-weight: 700; font-variant-numeric: tabular-nums; color: var(--pilot-travertine); }
+.pilot-vehicle__price span { font-family: var(--pilot-body); font-size: .875rem; font-weight: 400; color: var(--pilot-muted); }
+.pilot-booking__error { color: var(--pilot-ink); border-inline-start: 3px solid var(--pilot-sky); padding: .75rem 1rem; margin-top: 1rem; }
+.pilot-field { min-width: 0; }
+.pilot-field__control option { background: var(--pilot-night); color: var(--pilot-ink); }
+.pilot a:focus-visible, .pilot button:focus-visible, .pilot input:focus-visible, .pilot select:focus-visible { outline: 2px solid var(--pilot-sky); outline-offset: 4px; }
+.pilot section[id] { scroll-margin-top: 5rem; }
+@media (min-width: 68rem) { .pilot-fleet { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 38rem) { .pilot-fleet { grid-template-columns: minmax(0, 1fr); } }
+
+.pilot-fleet__note { color: var(--pilot-muted); font-size: .75rem; margin-block: -1.5rem 1.5rem; }
+.pilot-vehicle { padding: 0 1.5rem 1.5rem; overflow: hidden; gap: 1.1rem; }
+.pilot-vehicle__photo { align-self: stretch; margin: 0 -1.5rem; aspect-ratio: 3 / 2; overflow: hidden; background: #101318; border-bottom: 1px solid var(--pilot-rule); }
+.pilot-vehicle__photo img { display: block; width: 100%; height: 100%; object-fit: contain; }
