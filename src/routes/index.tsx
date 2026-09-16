@@ -20,7 +20,7 @@ export const Route = createFileRoute("/")({
 // The journey is the spine: the scrub controller owns media time while every
 // chapter stays server-rendered. The sections below it are the things a guest
 // needs settled before the key can change hands.
-function Index() {
+export function Index() {
   return (
     <main className="pilot" id="ust">
       <SiteNav />
