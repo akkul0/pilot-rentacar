@@ -53,7 +53,13 @@ if (corrupt.length > 0) {
       rmSync(real, { recursive: true, force: true });
       if (real !== dir) rmSync(dir, { recursive: true, force: true });
     }
-    const r = spawnSync("bun", ["install", "--frozen-lockfile"], {
+    const usingBun = process.env.npm_config_user_agent?.startsWith("bun/");
+    const npmCli = process.env.npm_execpath;
+    const command = usingBun ? "bun" : npmCli ? process.execPath : "npm";
+    const args = usingBun
+      ? ["install", "--frozen-lockfile"]
+      : npmCli ? [npmCli, "ci"] : ["ci"];
+    const r = spawnSync(command, args, {
       cwd: ROOT,
       stdio: "inherit",
       env: { ...process.env, HF_INSTALL_HEAL: "1" },
@@ -64,7 +70,7 @@ if (corrupt.length > 0) {
     console.error(
       `${name} is STILL partially extracted after a re-extract — ` +
         `missing: ${missing.slice(0, 10).join(", ")}\n` +
-        `Fix manually: rm -rf node_modules/${name} && bun install`,
+        `Reinstall with the project's package manager (npm ci or bun install --frozen-lockfile).`,
     );
   }
   process.exit(1);

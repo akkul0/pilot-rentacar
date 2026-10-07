@@ -1,15 +1,15 @@
 {
-  "lockfileVersion": 1,
+  "lockfileVersion": 2,
   "configVersion": 1,
   "workspaces": {
     "": {
       "name": "tanstack_start_ts",
       "dependencies": {
         "@base-ui/react": "1.5.0",
-        "@higgsfield/app-landing": "workspace:*",
-        "@higgsfield/fnf": "workspace:*",
-        "@higgsfield/fnf-react": "workspace:*",
-        "@higgsfield/quanta": "workspace:*",
+        "@higgsfield/app-landing": "0.0.0",
+        "@higgsfield/fnf": "0.0.0",
+        "@higgsfield/fnf-react": "0.0.0",
+        "@higgsfield/quanta": "0.0.0",
         "@phosphor-icons/react": "^2.1.10",
         "@shadcn/react": "^0.2.1",
         "@tailwindcss/vite": "^4.3.2",
@@ -30,6 +30,7 @@
         "react-dom": "^19.2.7",
         "react-resizable-panels": "^4.12.1",
         "recharts": "^3.8.0",
+        "serve-static": "^2.2.1",
         "shadcn": "^4.13.0",
         "sonner": "^2.0.7",
         "tailwind-merge": "^3.6.0",
@@ -62,7 +63,7 @@
       "name": "@higgsfield/app-landing",
       "version": "0.0.0",
       "dependencies": {
-        "@higgsfield/quanta": "workspace:*",
+        "@higgsfield/quanta": "0.0.0",
         "lucide-react": "^1.23.0",
         "zod": "^4.4.3",
       },
@@ -128,7 +129,7 @@
         "@testing-library/react": "^16.1.0",
         "@testing-library/user-event": "^14.5.2",
         "@types/node": "^20.11.0",
-        "@types/react": "19.2.1",
+        "@types/react": "19.2.15",
         "@types/react-dom": "^19.0.0",
         "@typescript/native-preview": "7.0.0-dev.20260619.1",
         "@vitejs/plugin-react": "^4.3.0",

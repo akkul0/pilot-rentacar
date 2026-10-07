@@ -8,6 +8,7 @@ import {
 import svgr from "vite-plugin-svgr";
 import { defaultServerConditions, defineConfig } from "vite";
 import { fileURLToPath } from "node:url";
+import { nitro } from "nitro/vite";
 
 // The vendored @higgsfield/quanta components import their glyphs from the private
 // Nexus-only `@higgsfield-ai/icons`. Generated sites build on the PUBLIC npm
@@ -20,6 +21,7 @@ const QUANTA_ICONS_SHIM = fileURLToPath(
 
 export default defineConfig(({ command, mode }) => {
   const designInspectorEnabled = process.env.HF_DESIGN_INSPECTOR === "1" || mode === "design";
+  const nodeBuild = mode === "node";
 
   return {
     // fsevents can miss edits under some setups (bun-launched dev, synced/virtual
@@ -47,7 +49,7 @@ export default defineConfig(({ command, mode }) => {
       // both variants bundle their edge build (react-dom's web-streams server,
       // etc.) instead of the Node variant leaning on nodejs_compat shims.
       // `vite dev` SSR runs in Node, where default node resolution is correct.
-      ...(command === "build"
+      ...(command === "build" && !nodeBuild
         ? {
             target: "webworker" as const,
             resolve: {
@@ -100,6 +102,22 @@ export default defineConfig(({ command, mode }) => {
       tanstackStart({
         server: { entry: "server" },
       }),
+      ...(nodeBuild
+        ? [nitro({
+            preset: "node-server",
+            // Nitro's built-in static handler does not serve byte ranges.
+            // The scroll videos need them for seeking, especially on Safari.
+            serveStatic: false,
+            handlers: [{
+              route: "/**",
+              middleware: true,
+              handler: fileURLToPath(new URL("./server/node-static.mjs", import.meta.url)),
+            }],
+            routeRules: {
+              "/assets/**": { headers: { "cache-control": "public, max-age=0, must-revalidate" } },
+            },
+          })]
+        : []),
       higgsfieldDesignInspectorVitePlugin(designInspectorEnabled),
       react({
         babel: {
