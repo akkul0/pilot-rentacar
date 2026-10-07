@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { PILOT_PHONE_DISPLAY, PILOT_PHONE_TEL, PILOT_WHATSAPP } from "./pilot-content";
 
@@ -89,6 +89,48 @@ export function IconPlus({ size = 18 }: { size?: number }) {
   );
 }
 
+export function IconPhone({ size = 18 }: { size?: number }) {
+  return (
+    <svg aria-hidden="true" height={size} viewBox="0 0 24 24" width={size} {...box}>
+      <path d="M6.6 3.8h2.6l1.4 4-1.9 1.3a11 11 0 0 0 5.2 5.2l1.3-1.9 4 1.4v2.6a2 2 0 0 1-2.2 2A15.6 15.6 0 0 1 4.6 6a2 2 0 0 1 2-2.2Z" />
+    </svg>
+  );
+}
+
+export function IconClose({ size = 20 }: { size?: number }) {
+  return (
+    <svg aria-hidden="true" height={size} viewBox="0 0 24 24" width={size} {...box}>
+      <path d="M6 6l12 12M18 6 6 18" />
+    </svg>
+  );
+}
+
+export function IconCheck({ size = 18 }: { size?: number }) {
+  return (
+    <svg aria-hidden="true" height={size} viewBox="0 0 24 24" width={size} {...box}>
+      <path d="m5 12.5 4.5 4.5L19 7.5" />
+    </svg>
+  );
+}
+
+export function IconCalendar({ size = 18 }: { size?: number }) {
+  return (
+    <svg aria-hidden="true" height={size} viewBox="0 0 24 24" width={size} {...box}>
+      <rect height="16" rx="2" width="17" x="3.5" y="5" />
+      <path d="M3.5 10h17M8 3v4M16 3v4" />
+    </svg>
+  );
+}
+
+export function IconOrbit({ size = 16 }: { size?: number }) {
+  return (
+    <svg aria-hidden="true" height={size} viewBox="0 0 24 24" width={size} {...box}>
+      <ellipse cx="12" cy="12" rx="9" ry="4.2" />
+      <path d="m17.6 6.4 1.9 1.7-2.4.8" />
+    </svg>
+  );
+}
+
 const CLAIM_ICONS = {
   clock: IconClock,
   pin: IconPin,
@@ -103,9 +145,9 @@ export function ClaimIcon({ name }: { name: keyof typeof CLAIM_ICONS }) {
 
 /* ── CTA garments ────────────────────────────────────────────────── */
 
-export function CtaWhatsApp({ children }: { children: ReactNode }) {
+export function CtaWhatsApp({ children, href = PILOT_WHATSAPP }: { children: ReactNode; href?: string }) {
   return (
-    <a className="pilot-cta-whatsapp" href={PILOT_WHATSAPP} rel="noreferrer" target="_blank">
+    <a className="pilot-cta-whatsapp" href={href} rel="noreferrer" target="_blank">
       <IconWhatsApp />
       <span>{children}</span>
     </a>
@@ -120,26 +162,28 @@ export function CtaCall() {
   );
 }
 
-export function CtaRent({ href, children }: { href: string; children: ReactNode }) {
+export function CtaRent({ onClick, children }: { onClick: () => void; children: ReactNode }) {
   return (
-    <a className="pilot-cta-rent" href={href} rel="noreferrer" target="_blank">
+    <button className="pilot-cta-rent" onClick={onClick} type="button">
       <span>{children}</span>
       <IconArrow />
-    </a>
+    </button>
   );
 }
 
-export function CtaPill({ href, children }: { href: string; children: ReactNode }) {
+export function CtaPill({ onClick, children }: { onClick: () => void; children: ReactNode }) {
   return (
-    <a className="pilot-cta-pill" href={href}>
+    <button className="pilot-cta-pill" onClick={onClick} type="button">
       <span className="pilot-cta-pill__dot" />
       <span>{children}</span>
-    </a>
+    </button>
   );
 }
 
-/* ── Entrance motion — transform only, fired on mount ─────────────── */
+/* ── Entrance motion — revealed as it scrolls into view ──────────── */
 
+/** Content renders visible (no-JS and SSR safe). Only blocks that start
+ *  below the fold are armed, then lifted in when they reach the viewport. */
 export function Rise({
   children,
   delay = 0,
@@ -149,16 +193,103 @@ export function Rise({
   delay?: number;
   className?: string;
 }) {
-  const [shown, setShown] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const [state, setState] = useState<"idle" | "armed" | "shown">("idle");
 
   useEffect(() => {
-    const id = window.setTimeout(() => setShown(true), delay);
-    return () => window.clearTimeout(id);
+    const el = ref.current;
+    if (!el || !("IntersectionObserver" in window)) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (el.getBoundingClientRect().top < window.innerHeight * 0.9) return;
+
+    setState("armed");
+    let timer = 0;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+        io.disconnect();
+        timer = window.setTimeout(() => setState("shown"), delay);
+      },
+      { rootMargin: "0px 0px -8% 0px" },
+    );
+    io.observe(el);
+    return () => {
+      io.disconnect();
+      window.clearTimeout(timer);
+    };
   }, [delay]);
 
   return (
-    <div className={["pilot-rise", className].filter(Boolean).join(" ")} data-shown={shown}>
+    <div className={["pilot-rise", className].filter(Boolean).join(" ")} data-state={state} ref={ref}>
       {children}
     </div>
+  );
+}
+
+/* ── Looping video — loads near the viewport, plays only while seen ─ */
+
+/** Muted inline loop with its exact first frame as poster. Nothing is
+ *  fetched until the element nears the viewport; it pauses off screen.
+ *  Reduced-motion and data-saver visitors keep the still poster. */
+export function LoopVideo({
+  src,
+  poster,
+  label,
+  className,
+}: {
+  src: string;
+  poster: string;
+  /** Omit for decorative footage. */
+  label?: string;
+  className?: string;
+}) {
+  const ref = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const video = ref.current;
+    if (!video || !("IntersectionObserver" in window)) return;
+    const saveData = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection
+      ?.saveData;
+    if (saveData || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    video.muted = true;
+    let attached = false;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          if (!attached) {
+            video.src = src;
+            attached = true;
+          }
+          video.play().catch(() => {});
+        } else if (attached) {
+          video.pause();
+        }
+      },
+      { rootMargin: "120px 0px" },
+    );
+    io.observe(video);
+    return () => {
+      io.disconnect();
+      if (attached) {
+        video.pause();
+        video.removeAttribute("src");
+        video.load();
+      }
+    };
+  }, [src]);
+
+  return (
+    <video
+      aria-hidden={label ? undefined : true}
+      aria-label={label}
+      className={className}
+      loop
+      muted
+      playsInline
+      poster={poster}
+      preload="none"
+      ref={ref}
+    />
   );
 }

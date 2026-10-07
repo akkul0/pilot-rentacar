@@ -1,16 +1,25 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 
+import { useBooking } from "./pilot-booking";
 import {
+  BODY_LABELS,
   CLAIMS,
   FAQS,
   FLEET_CARS,
+  FLEET_TOTAL,
+  LOCATIONS,
+  STEPS,
   carLabel,
+  carPoster,
+  carVideo,
   formatPrice,
+  isoToday,
   PILOT_MAP,
   PILOT_PHONE_DISPLAY,
   PILOT_PHONE_TEL,
   PILOT_WHATSAPP,
   ROUTES,
+  type CarBody,
 } from "./pilot-content";
 import { PilotMark } from "./pilot-mark";
 import {
@@ -19,22 +28,19 @@ import {
   CtaPill,
   CtaRent,
   CtaWhatsApp,
+  IconCalendar,
+  IconOrbit,
+  IconPhone,
   IconPlus,
+  IconWhatsApp,
+  LoopVideo,
   Rise,
 } from "./pilot-ui";
-
-const PICKUPS = [
-  "Antalya Havalimanı",
-  "Belek",
-  "Lara / Kundu",
-  "Side",
-  "Kemer",
-  "Antalya şehir merkezi",
-];
 
 /* ── Nav ─────────────────────────────────────────────────────────── */
 
 export function SiteNav() {
+  const openBooking = useBooking();
   return (
     <header className="pilot-nav">
       <a href="#ust">
@@ -58,7 +64,7 @@ export function SiteNav() {
         </a>
       </nav>
       <div className="pilot-nav__tail">
-        <CtaPill href="#rezervasyon">Rezervasyon</CtaPill>
+        <CtaPill onClick={() => openBooking()}>Rezervasyon</CtaPill>
       </div>
     </header>
   );
@@ -66,13 +72,17 @@ export function SiteNav() {
 
 /* ── Booking bar — the instrument panel ──────────────────────────── */
 
+const noSubscribe = () => () => {};
+
 export function BookingBar() {
-  const [pickup, setPickup] = useState(PICKUPS[0]);
+  const openBooking = useBooking();
+  const [pickup, setPickup] = useState(LOCATIONS[0]);
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
-  const [carId, setCarId] = useState(FLEET_CARS[0].id);
-  const car = FLEET_CARS.find((item) => item.id === carId) ?? FLEET_CARS[0];
-  const [error, setError] = useState("");
+  const [carId, setCarId] = useState("");
+  // Empty on the server, today's local date once hydrated.
+  const today = useSyncExternalStore(noSubscribe, isoToday, () => "");
+  const car = FLEET_CARS.find((item) => item.id === carId);
 
   const nights = useMemo(() => {
     if (!start || !end) return 0;
@@ -80,35 +90,17 @@ export function BookingBar() {
     return ms > 0 ? Math.round(ms / 86400000) : 0;
   }, [start, end]);
 
-  const message = useMemo(() => {
-    const lines = [
-      "Merhaba, Pilot Rent a Car için fiyat almak istiyorum.",
-      `Alış yeri: ${pickup}`,
-      start ? `Alış tarihi: ${start}` : null,
-      end ? `İade tarihi: ${end}` : null,
-      nights ? `Süre: ${nights} gün` : null,
-      `Araç: ${carLabel(car)}`,
-      `Günlük fiyat: ${formatPrice(car.dailyPrice)}`,
-      nights ? `Tahmini toplam: ${formatPrice(nights * car.dailyPrice)}` : null,
-    ].filter(Boolean);
-    return lines.join("\n");
-  }, [pickup, start, end, nights, car]);
-
-  function submit() {
-    if (!start || !end || nights <= 0) {
-      setError("Alış ve iade tarihlerini seçin. İade tarihi alış tarihinden sonra olmalıdır.");
-      return;
-    }
-    setError("");
-    const url = `${PILOT_WHATSAPP}&text=${encodeURIComponent(message)}`;
-    window.open(url, "_blank", "noopener,noreferrer");
-  }
-
   return (
     <section className="pilot-booking" id="rezervasyon">
       <div className="pilot-shell">
         <Rise>
-          <div className="pilot-booking__grid">
+          <form
+            className="pilot-booking__grid"
+            onSubmit={(event) => {
+              event.preventDefault();
+              openBooking({ pickupPlace: pickup, pickupDate: start, returnDate: end, carId });
+            }}
+          >
             <label className="pilot-field">
               <span className="pilot-field__label">Alış yeri</span>
               <select
@@ -116,7 +108,7 @@ export function BookingBar() {
                 onChange={(e) => setPickup(e.target.value)}
                 value={pickup}
               >
-                {PICKUPS.map((p) => (
+                {LOCATIONS.map((p) => (
                   <option key={p} value={p}>
                     {p}
                   </option>
@@ -128,8 +120,8 @@ export function BookingBar() {
               <span className="pilot-field__label">Alış tarihi</span>
               <input
                 className="pilot-field__control"
-                onChange={(e) => { setStart(e.target.value); setError(""); }}
-                onInput={(e) => { setStart(e.currentTarget.value); setError(""); }}
+                min={today || undefined}
+                onChange={(e) => setStart(e.target.value)}
                 type="date"
                 value={start}
               />
@@ -139,9 +131,8 @@ export function BookingBar() {
               <span className="pilot-field__label">İade tarihi</span>
               <input
                 className="pilot-field__control"
-                min={start || undefined}
-                onChange={(e) => { setEnd(e.target.value); setError(""); }}
-                onInput={(e) => { setEnd(e.currentTarget.value); setError(""); }}
+                min={start || today || undefined}
+                onChange={(e) => setEnd(e.target.value)}
                 type="date"
                 value={end}
               />
@@ -154,6 +145,7 @@ export function BookingBar() {
                 onChange={(e) => setCarId(e.target.value)}
                 value={carId}
               >
+                <option value="">Tüm araçlar</option>
                 {FLEET_CARS.map((c) => (
                   <option key={c.id} value={c.id}>
                     {carLabel(c)} · {formatPrice(c.dailyPrice)} / gün
@@ -163,31 +155,31 @@ export function BookingBar() {
             </label>
 
             <div className="pilot-booking__submit">
-              <button className="pilot-cta-quote" onClick={submit} type="button">
-                Fiyat al
+              <button className="pilot-cta-quote" type="submit">
+                Rezervasyon yap
               </button>
             </div>
-          </div>
+          </form>
         </Rise>
 
-        {error && <p className="pilot-booking__error" role="alert">{error}</p>}
-        <p className="pilot-booking__note">
-          Ön ödeme yok. Fiyat ve uygunluk WhatsApp üzerinden yazılı olarak dönülür.
-        </p>
-
         <div className="pilot-booking__out">
-          <p>
-            {nights > 0 ? (
+          <span className="pilot-booking__live" aria-hidden="true" />
+          <p aria-live="polite">
+            {nights > 0 && car ? (
               <>
-                <strong>{pickup}</strong> · <strong>{nights} gün</strong> ·{" "}
-                <strong>{carLabel(car)}</strong>.<br />
-                Günlük {formatPrice(car.dailyPrice)} · Tahmini toplam: <strong>{formatPrice(nights * car.dailyPrice)}</strong>.
-                Kesin fiyat ve uygunluk rezervasyon sırasında onaylanır.
+                <strong>{pickup}</strong> · <strong>{nights} gün</strong> · <strong>{carLabel(car)}</strong> ·
+                Tahmini toplam <strong>{formatPrice(nights * car.dailyPrice)}</strong>. Ön ödeme yok; kesin
+                tutar onayda bildirilir.
+              </>
+            ) : nights > 0 ? (
+              <>
+                <strong>{nights} gün</strong> için {FLEET_TOTAL} araçtan seçin; toplam tutarı rezervasyon
+                ekranında anında görürsünüz.
               </>
             ) : (
               <>
-                Tarihleri seçtiğinizde süre burada hesaplanır ve talep özeti{" "}
-                <strong>WhatsApp</strong>'a hazır gider.
+                Online rezervasyon üç adımda biter: tarih, araç, iletişim. Onay özeti e-postanıza gelir,{" "}
+                <strong>ön ödeme alınmaz</strong>.
               </>
             )}
           </p>
@@ -197,9 +189,60 @@ export function BookingBar() {
   );
 }
 
+/* ── Ticker — places and promises, always moving ─────────────────── */
+
+const TICKER = [
+  "Antalya Havalimanı",
+  "7/24 karşılama",
+  "Lara",
+  "Kundu",
+  "Ön ödeme yok",
+  "Belek",
+  "Side",
+  "Otelinize teslim",
+  "Kemer",
+  "Konyaaltı",
+  "Şoförlü kiralama",
+];
+
+export function Ticker() {
+  const run = (hidden: boolean) => (
+    <ul aria-hidden={hidden || undefined} className="pilot-ticker__run">
+      {TICKER.map((item) => (
+        <li key={item}>{item}</li>
+      ))}
+    </ul>
+  );
+  return (
+    <div className="pilot-ticker">
+      <div className="pilot-ticker__track">
+        {run(false)}
+        {run(true)}
+      </div>
+    </div>
+  );
+}
+
 /* ── Fleet ───────────────────────────────────────────────────────── */
 
+type FleetFilter = "all" | CarBody | "dizel";
+
+const FILTERS: { key: FleetFilter; label: string }[] = [
+  { key: "all", label: "Tümü" },
+  { key: "sedan", label: BODY_LABELS.sedan },
+  { key: "hatchback", label: BODY_LABELS.hatchback },
+  { key: "ticari", label: BODY_LABELS.ticari },
+  { key: "dizel", label: "Dizel" },
+];
+
+const matches = (filter: FleetFilter) => (car: (typeof FLEET_CARS)[number]) =>
+  filter === "all" ? true : filter === "dizel" ? /dizel/i.test(car.fuel) : car.body === filter;
+
 export function Fleet() {
+  const openBooking = useBooking();
+  const [filter, setFilter] = useState<FleetFilter>("all");
+  const cars = FLEET_CARS.filter(matches(filter));
+
   return (
     <section className="pilot-section" id="filo">
       <div className="pilot-shell">
@@ -209,35 +252,73 @@ export function Fleet() {
             <h2 className="pilot-h2">Kiralık araçlarımız</h2>
           </div>
           <p className="pilot-lede">
-            Günlük kiralama ücretleri aşağıdadır. Tarihlerinize uygun araç için bize ulaşın.
+            Her aracın çevresinde dönün, günlük fiyatı görün ve tek dokunuşla rezervasyon yapın.
           </p>
         </div>
-        <p className="pilot-fleet__note">Görseller temsilidir; araçların renk ve donanımları farklı olabilir.</p>
+
+        <div className="pilot-fleet__bar">
+          <div className="pilot-chips" role="group" aria-label="Filoyu süz">
+            {FILTERS.map(({ key, label }) => (
+              <button
+                aria-pressed={filter === key}
+                className="pilot-chip"
+                key={key}
+                onClick={() => setFilter(key)}
+                type="button"
+              >
+                {label}
+                <span className="pilot-chip__count">{FLEET_CARS.filter(matches(key)).length}</span>
+              </button>
+            ))}
+          </div>
+          <p className="pilot-fleet__note">
+            <IconOrbit /> Görüntüler temsilidir; renk ve donanım farklı olabilir.
+          </p>
+        </div>
+
         <div className="pilot-fleet">
-          {FLEET_CARS.map((car) => (
-            <article className="pilot-vehicle" key={car.id}>
-              <figure className="pilot-vehicle__photo">
-                <img
-                  src={`/assets/fleet/cars/${car.id.split("-")[0]}.png`}
-                  alt={`${car.name}, marka logosuyla koyu stüdyo ortamında`}
-                  width={1536}
-                  height={1024}
-                  loading="lazy"
-                  decoding="async"
-                />
-              </figure>
-              <div className="pilot-vehicle__heading">
-                <span className="pilot-vehicle__year">{car.year} model</span>
-                <h3 className="pilot-class__name">{car.name}</h3>
-                <p className="pilot-vehicle__fuel">{car.fuel}</p>
-              </div>
-              <p className="pilot-vehicle__price">{formatPrice(car.dailyPrice)} <span>/ gün</span></p>
-              <CtaRent href={`${PILOT_WHATSAPP}&text=${encodeURIComponent(
-                `Merhaba, ${carLabel(car)} için müsaitlik sormak istiyorum. Günlük fiyat: ${formatPrice(car.dailyPrice)}.`,
-              )}`}>
-                Müsaitlik sor
-              </CtaRent>
-            </article>
+          {cars.map((car, i) => (
+            <Rise delay={(i % 3) * 90} key={car.id}>
+              <article className="pilot-vehicle">
+                <figure className="pilot-vehicle__photo">
+                  <LoopVideo
+                    className="pilot-vehicle__video"
+                    label={`${car.name}, çevresinde dönen kamera görünümü`}
+                    poster={carPoster(car)}
+                    src={carVideo(car)}
+                  />
+                  <span className="pilot-vehicle__badge">{BODY_LABELS[car.body]}</span>
+                  <span className="pilot-vehicle__orbit" aria-hidden="true">
+                    <IconOrbit size={14} /> 360°
+                  </span>
+                </figure>
+                <div className="pilot-vehicle__heading">
+                  <span className="pilot-vehicle__year">
+                    {car.year} model · {car.fuel}
+                  </span>
+                  <h3 className="pilot-class__name">{car.name}</h3>
+                </div>
+                <div className="pilot-vehicle__foot">
+                  <p className="pilot-vehicle__price">
+                    {formatPrice(car.dailyPrice)} <span>/ gün</span>
+                  </p>
+                  <div className="pilot-vehicle__actions">
+                    <a
+                      aria-label={`${car.name} için WhatsApp'tan müsaitlik sor`}
+                      className="pilot-vehicle__wa"
+                      href={`${PILOT_WHATSAPP}&text=${encodeURIComponent(
+                        `Merhaba, ${carLabel(car)} için müsaitlik sormak istiyorum. Günlük fiyat: ${formatPrice(car.dailyPrice)}.`,
+                      )}`}
+                      rel="noreferrer"
+                      target="_blank"
+                    >
+                      <IconWhatsApp size={18} />
+                    </a>
+                    <CtaRent onClick={() => openBooking({ carId: car.id })}>Hemen kirala</CtaRent>
+                  </div>
+                </div>
+              </article>
+            </Rise>
           ))}
         </div>
       </div>
@@ -253,19 +334,31 @@ export function Why() {
       <div className="pilot-shell">
         <div className="pilot-why">
           <Rise className="pilot-why__figure">
-            <img
-              alt="Gece yolda ilerleyen aracın direksiyon ve gösterge paneli"
-              height={1200}
-              loading="lazy"
-              src="/assets/place/kabin.webp"
-              width={1800}
+            <LoopVideo
+              className="pilot-why__video"
+              poster="/assets/place/video/kabin.webp"
+              src="/assets/place/video/kabin.mp4"
             />
           </Rise>
 
           <div>
             <p className="pilot-eyebrow">Neden Pilot</p>
             <h2 className="pilot-h2">Kiralama ve teslimat hizmetleri</h2>
-            <div className="pilot-claims" style={{ marginTop: "2rem" }}>
+            <div className="pilot-stats">
+              <div>
+                <strong>{FLEET_TOTAL}</strong>
+                <span>araç seçeneği</span>
+              </div>
+              <div>
+                <strong>7/24</strong>
+                <span>havalimanı karşılama</span>
+              </div>
+              <div>
+                <strong>0 TL</strong>
+                <span>ön ödeme</span>
+              </div>
+            </div>
+            <div className="pilot-claims">
               {CLAIMS.map((c, i) => (
                 <Rise delay={i * 80} key={c.title}>
                   <div className="pilot-claim">
@@ -296,28 +389,20 @@ export function Places() {
         <div className="pilot-section__head pilot-section__head--split">
           <div>
             <p className="pilot-eyebrow">Rotalar</p>
-            <h2 className="pilot-h2">
-              Antalya’dan yol mesafeleri
-            </h2>
+            <h2 className="pilot-h2">Antalya’dan yol mesafeleri</h2>
           </div>
-          <p className="pilot-lede">
-            Antalya Havalimanı’ndan bazı bölgelere yaklaşık sürüş süreleri.
-          </p>
+          <p className="pilot-lede">Antalya Havalimanı’ndan bazı bölgelere yaklaşık sürüş süreleri.</p>
         </div>
 
         <div className="pilot-places">
           <Rise className="pilot-places__plate">
-            <img
-              alt="Çamların arasından denize açılan boş sahil yolu"
-              height={1200}
-              loading="lazy"
-              src="/assets/place/belek-yol.webp"
-              width={1800}
+            <LoopVideo
+              className="pilot-places__video"
+              poster="/assets/place/video/belek-yol.webp"
+              src="/assets/place/video/belek-yol.mp4"
             />
             <div className="pilot-places__caption">
-              <p className="pilot-spec" style={{ color: "var(--pilot-travertine)" }}>
-                D400 · Belek çıkışı
-              </p>
+              <p className="pilot-spec">D400 · Belek çıkışı</p>
             </div>
           </Rise>
 
@@ -340,6 +425,38 @@ export function Places() {
   );
 }
 
+/* ── Steps — numbered timeline ───────────────────────────────────── */
+
+export function Steps() {
+  const openBooking = useBooking();
+  return (
+    <section className="pilot-section pilot-section--well" id="adimlar">
+      <div className="pilot-shell">
+        <div className="pilot-section__head pilot-section__head--split">
+          <h2 className="pilot-h2">Üç adımda anahtar elinizde.</h2>
+          <div className="pilot-steps__cta">
+            <p className="pilot-lede">Rezervasyon birkaç dakika sürer; onay özeti e-postanıza gelir.</p>
+            <button className="pilot-cta-quote" onClick={() => openBooking()} type="button">
+              <IconCalendar size={16} /> Rezervasyona başla
+            </button>
+          </div>
+        </div>
+        <div className="pilot-steps">
+          {STEPS.map((s, i) => (
+            <Rise delay={i * 120} key={s.no}>
+              <div className="pilot-step">
+                <span className="pilot-step__no">{s.no}</span>
+                <h3 className="pilot-step__title">{s.title}</h3>
+                <p className="pilot-step__body">{s.body}</p>
+              </div>
+            </Rise>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 /* ── FAQ ─────────────────────────────────────────────────────────── */
 
 export function Faq() {
@@ -355,7 +472,7 @@ export function Faq() {
 
         <div className="pilot-faq">
           {FAQS.map((f, i) => (
-            <div className="pilot-faq__item" key={f.q}>
+            <div className="pilot-faq__item" data-open={open === i} key={f.q}>
               <button
                 aria-controls={`faq-a-${i}`}
                 aria-expanded={open === i}
@@ -367,11 +484,11 @@ export function Faq() {
                 <span>{f.q}</span>
                 <IconPlus />
               </button>
-              {open === i ? (
-                <p aria-labelledby={`faq-q-${i}`} className="pilot-faq__a" id={`faq-a-${i}`}>
-                  {f.a}
-                </p>
-              ) : null}
+              <div className="pilot-faq__panel" id={`faq-a-${i}`} role="region" aria-labelledby={`faq-q-${i}`}>
+                <div>
+                  <p className="pilot-faq__a">{f.a}</p>
+                </div>
+              </div>
             </div>
           ))}
         </div>
@@ -383,13 +500,13 @@ export function Faq() {
 /* ── Closing plate ───────────────────────────────────────────────── */
 
 export function ClosingPlate() {
+  const openBooking = useBooking();
   return (
     <section className="pilot-close" id="iletisim">
-      <img
-        alt=""
+      <LoopVideo
         className="pilot-close__bg"
-        loading="lazy"
-        src="/assets/brand/cover.webp"
+        poster="/assets/brand/video/cover.webp"
+        src="/assets/brand/video/cover.mp4"
       />
       <div className="pilot-close__veil" />
       <div className="pilot-close__inner">
@@ -398,9 +515,12 @@ export function ClosingPlate() {
             <p className="pilot-eyebrow">İletişim</p>
             <h2 className="pilot-h2">Rezervasyon ve bilgi</h2>
             <p className="pilot-lede" style={{ marginTop: "1rem" }}>
-              Araç uygunluğu, teslimat ve kiralama koşulları için arayın veya WhatsApp’tan yazın.
+              Online rezervasyon yapın, arayın veya WhatsApp’tan yazın. Gece inen uçak da karşılanır.
             </p>
             <div className="pilot-close__actions">
+              <button className="pilot-cta-quote" onClick={() => openBooking()} type="button">
+                Rezervasyon yap
+              </button>
               <CtaWhatsApp>WhatsApp'tan yaz</CtaWhatsApp>
               <CtaCall />
             </div>
@@ -408,6 +528,45 @@ export function ClosingPlate() {
         </div>
       </div>
     </section>
+  );
+}
+
+/* ── Mobile dock — the three ways to book, always within reach ───── */
+
+export function MobileDock() {
+  const openBooking = useBooking();
+  const [shown, setShown] = useState(false);
+
+  useEffect(() => {
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      setShown(window.scrollY > window.innerHeight * 0.6);
+    };
+    const onScroll = () => {
+      if (!frame) frame = window.requestAnimationFrame(update);
+    };
+    update();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (frame) window.cancelAnimationFrame(frame);
+    };
+  }, []);
+
+  return (
+    <div className="pilot-dock" data-shown={shown}>
+      <a aria-label="Hemen ara" className="pilot-dock__icon" href={`tel:${PILOT_PHONE_TEL}`}>
+        <IconPhone />
+      </a>
+      <a aria-label="WhatsApp" className="pilot-dock__icon" href={PILOT_WHATSAPP} rel="noreferrer" target="_blank">
+        <IconWhatsApp size={19} />
+      </a>
+      <button className="pilot-dock__book" onClick={() => openBooking()} type="button">
+        <span className="pilot-cta-pill__dot" />
+        Rezervasyon yap
+      </button>
+    </div>
   );
 }
 
@@ -421,8 +580,7 @@ export function Footer() {
           <div>
             <PilotMark height={30} />
             <p className="pilot-lede" style={{ marginTop: "1rem", fontSize: "0.9375rem" }}>
-              Antalya ve Antalya Havalimanı'nda oto kiralama, şoförlü kiralama ve
-              transfer.
+              Antalya ve Antalya Havalimanı'nda oto kiralama, şoförlü kiralama ve transfer.
             </p>
           </div>
 
